@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Legacy Circle — Social Architecture & Prestige Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Spectral:ital,wght@0,300;0,400;1,300&family=Josefin+Sans:wght@200;300;400&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --gold: #b89a5c;
+    --gold-light: #d4b87a;
+    --gold-dim: #8a7244;
+    --cream: #ede6d3;
+    --cream-dim: rgba(237,230,211,0.55);
+    --cream-ghost: rgba(237,230,211,0.18);
+    --bg: #0b0b09;
+    --bg2: #0f0f0c;
+    --bg3: #141410;
+    --bg4: #191915;
+    --rule: rgba(237,230,211,0.08);
+    --rule2: rgba(237,230,211,0.14);
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --serif2: 'Spectral', Georgia, serif;
+    --sans: 'Josefin Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--cream);
+    font-family: var(--serif2);
+    font-weight: 300;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* Custom cursor */
+  .cursor {
+    position: fixed; top: 0; left: 0; z-index: 9999;
+    pointer-events: none;
+  }
+  .cursor-dot {
+    width: 6px; height: 6px; background: var(--gold);
+    border-radius: 50%; position: absolute;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s;
+  }
+  .cursor-ring {
+    width: 32px; height: 32px;
+    border: 0.5px solid rgba(184,154,92,0.5);
+    border-radius: 50%; position: absolute;
+    transform: translate(-50%, -50%);
+    transition: all 0.18s ease;
+  }
+  body:has(a:hover) .cursor-ring,
+  body:has(button:hover) .cursor-ring {
+    transform: translate(-50%, -50%) scale(1.6);
+    border-color: var(--gold);
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 1;
+    pointer-events: none;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--gold-dim); }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 28px 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 0.5px solid transparent;
+    transition: all 0.4s ease;
+    cursor: none;
+  }
+  nav.scrolled {
+    background: rgba(11,11,9,0.92);
+    border-bottom-color: var(--rule);
+    backdrop-filter: blur(12px);
+    padding: 18px 56px;
+  }
+  .nav-logo {
+    font-family: var(--sans); font-weight: 200;
+    font-size: 13px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--cream); text-decoration: none;
+  }
+  .nav-logo span { color: var(--gold); }
+  .nav-links {
+    display: flex; gap: 36px; list-style: none;
+  }
+  .nav-links a {
+    font-family: var(--sans); font-size: 10px; font-weight: 300;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: rgba(237,230,211,0.45); text-decoration: none;
+    transition: color 0.2s;
+    cursor: none;
+  }
+  .nav-links a:hover { color: var(--cream); }
+  .nav-portal {
+    font-family: var(--sans); font-size: 10px; font-weight: 300;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--gold); border: 0.5px solid var(--gold-dim);
+    padding: 9px 20px; text-decoration: none;
+    transition: all 0.2s;
+    cursor: none;
+  }
+  .nav-portal:hover { background: var(--gold); color: var(--bg); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex; align-items: flex-end;
+    padding: 0 56px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 70% at 70% 40%, rgba(184,154,92,0.05) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 50% at 20% 60%, rgba(184,154,92,0.03) 0%, transparent 50%),
+      var(--bg);
+  }
+  .hero-lines {
+    position: absolute; inset: 0; pointer-events: none;
+  }
+  .hero-line {
+    position: absolute; background: var(--rule);
+  }
+  .hero-line.v1 { left: 56px; top: 0; bottom: 0; width: 0.5px; }
+  .hero-line.v2 { right: 56px; top: 0; bottom: 0; width: 0.5px; }
+  .hero-line.h1 { top: 50%; left: 0; right: 0; height: 0.5px; opacity: 0.5; }
+
+  .hero-number {
+    position: absolute; top: 50%; right: 72px;
+    transform: translateY(-50%);
+    font-family: var(--sans); font-weight: 200;
+    font-size: 180px; line-height: 1;
+    color: rgba(184,154,92,0.04);
+    letter-spacing: -0.05em;
+    user-select: none;
+  }
+
+  .hero-content {
+    position: relative; z-index: 2;
+    max-width: 700px;
+  }
+  .hero-tag {
+    font-family: var(--sans); font-size: 10px; font-weight: 300;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 32px;
+    display: flex; align-items: center; gap: 16px;
+    opacity: 0; animation: fadeUp 0.8s 0.2s forwards;
+  }
+  .hero-tag::before {
+    content: ''; width: 40px; height: 0.5px; background: var(--gold);
+  }
+  .hero-h1 {
+    font-family: var(--serif); font-weight: 300;
+    font-size: clamp(48px, 6vw, 80px);
+    line-height: 1.08; color: var(--cream);
+    margin-bottom: 32px;
+    opacity: 0; animation: fadeUp 0.9s 0.35s forwards;
+  }
+  .hero-h1 em {
+    font-style: italic; color: var(--gold);
+    font-weight: 300;
+  }
+  .hero-sub {
+    font-family: var(--serif2); font-weight: 300;
+    font-size: 16px; line-height: 1.85;
+    color: var(--cream-dim); max-width: 480px;
+    margin-bottom: 48px;
+    opacity: 0; animation: fadeUp 0.9s 0.5s forwards;
+  }
+  .hero-actions {
+    display: flex; align-items: center; gap: 32px;
+    opacity: 0; animation: fadeUp 0.9s 0.65s forwards;
+  }
+  .btn-primary {
+    font-family: var(--sans); font-size: 10px; font-weight: 300;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    background: var(--gold); color: var(--bg);
+    padding: 16px 36px; text-decoration: none;
+    transition: all 0.25s; cursor: none;
+  }
+  .btn-primary:hover { background: var(--gold-light); }
+  .btn-ghost {
+    font-family: var(--sans); font-size: 10px; font-weight: 300;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(237,230,211,0.45); text-decoration: none;
+    display: flex; align-items: center; gap: 10px;
+    transition: color 0.2s; cursor: none;
+  }
+  .btn-ghost:hover { color: var(--cream); }
+  .btn-ghost::after {
+    content: ''; width: 28px; height: 0.5px;
+    background: currentColor;
+    transition: width 0.2s;
+  }
+  .btn-ghost:hover::after { width: 44px; }
+
+  .hero-aside {
+    position: absolute; right: 72px; bottom: 80px;
+    width: 220px; z-index: 2;
+    opacity: 0; animation: fadeUp 0.9s 0.8s forwards;
+  }
+  .hero-aside-rule {
+    width: 28px; height: 0.5px; background: var(--gold-dim);
+    margin-bottom: 16px;
+  }
+  .hero-aside p {
+    font-family: var(--sans); font-size: 10px; font-weight: 200;
+    letter-spacing: 0.06em; line-height: 1.9;
+    color: rgba(237,230,211,0.25);
+  }
+
+  /* Scroll indicator */
+  .scroll-hint {
+    position: absolute; bottom: 32px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    opacity: 0; animation: fadeIn 1s 1.2s forwards;
+  }
+  .scroll-hint span {
+    font-family: var(--sans); font-size: 9px; font-weight: 200;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgba(237,230,211,0.2);
+  }
+  .scroll-line {
+    width: 0.5px; height: 40px; background: linear-gradient(to bottom, var(--gold-dim), transparent);
+    animation: scrollAnim 2s 1.5s infinite;
+  }
+
+  /* ── AFFILIATION STRIP ── */
+  .strip {
+    background: var(--bg3);
+    border-top: 0.5px solid var(--rule);
+    border-bottom: 0.5px solid var(--rule);
+    padding: 20px 56px;
+    display: flex; align-items: center; gap: 56px;
+    overflow: hidden;
+  }
+  .strip-label {
+    font-family: var(--sans); font-size: 9px; font-weight: 200;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgba(237,230,211,0.22); white-space: nowrap; flex-shrink: 0;
+  }
+  .strip-items {
+    display: flex; gap: 48px; align-items: center; flex-wrap: wrap;
+  }
+  .strip-item {
+    font-family: var(--sans); font-size: 10px; font-weight: 200;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(237,230,211,0.2);
+  }
+
+  /* ── SECTION COMMONS ── */
+  section { position: relative; }
+  .section-label {
+    font-family: var(--sans); font-size: 9px; font-weight: 300;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 20px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .section-label::before {
+    content: ''; width: 24px; height: 0.5px; background: var(--gold);
+  }
+
+  /* ── PROBLEM ── */
+  .problem {
+    padding: 120px 56px;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 80px; align-items: start;
+    background: var(--bg2);
+    border-bottom: 0.5px solid var(--rule);
+  }
+  .problem-left {}
+  .problem-h2 {
+    font-family: var(--serif); font-weight: 300;
+    font-size: clamp(30px, 3.5vw, 44px);
+    line-height: 1.2; color: var(--cream);
+    margin-bottom: 28px;
+  }
+  .problem-body {
+    font-size: 15px; line-height: 1.95;
+    color: var(--cream-dim);
+  }
+  .problem-body p + p { margin-top: 16px; }
+  .problem-right {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .gap-card {
+    background: var(--bg3);
+    border: 0.5px solid var(--rule);
+    border-left: 2px solid var(--rule);
+    padding: 24px 28px;
+    transition: all 0.25s;
+    cursor: default;
+  }
+  .gap-card:hover {
+    border-left-color: var(--gold-dim);
+    background: var(--bg4);
+  }
+  .gap-card-title {
+    font-family: var(--sans); font-size: 10px; font-weight: 300;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(237,230,211,0.5); margin-bottom: 10px;
+  }
+  .gap-card-body {
+    font-size: 13px; line-height: 1.8; color: rgba(237,230,211,0.32);
+    margin-bottom: 12px;
+  }
+  .gap-card-fail {
+    font-family: var(--sans); font-size: 9px; font-weight: 200;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: rgba(180,80,60,0.7);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .gap-card-fail::before {
+    content: ''; width: 14px; height: 0.5px; background: rgba(180,80,60,0.7);
+  }
+
+  /* ── PROCESS ── */
+  .process {
+    padding: 120px 56px;
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--rule);
+  }
+  .process-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 72px;
+  }
+  .process-h2 {
+    font-family: var(--serif); font-weight: 300;
+    font-size: clamp(28px, 3vw, 40px);
+    color: var(--cream);
+  }
+  .process-note {
+    font-family: var(--sans); font-size: 10px; font-weight: 200;
+    letter-spacing: 0.08em; color: rgba(237,230,211,0.25);
+    max-width: 220px; text-align: right; line-height: 1.7;
+  }
+  .process-steps {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    border-top: 0.5px solid var(--rule);
+  }
+  .step {
+    padding: 48px 40px 48px 0;
+    border-right: 0.5px solid var(--rule);
+    margin-right: -0.5px;
+  }
+  .step:last-child { border-right: none; padding-right: 0; }
+  .step:not(:first-child) { padding-left: 40px; }
+  .step-num {
+    font-family: var(--sans); font-size: 10px; font-weight: 200;
+    letter-spacing: 0.18em; color: var(--gold);
+    margin-bottom: 28px; font-variant-numeric: tabular-nums;
+  }
+  .step-h3 {
+    font-family: var(--serif); font-weight: 300; font-size: 26px;
+    color: var(--cream); margin-bottom: 16px;
+    line-height: 1.2;
+  }
+  .step-body {
+    font-size: 14px; line-height: 1.9; color: rgba(237,230,211,0.4);
+  }
+
+  /* ── MANIFESTO ── */
+  .manifesto {
+    padding: 100px 56px;
+    background: var(--bg3);
+    border-bottom: 0.5px solid var(--rule);
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .manifesto-inner { max-width: 680px; text-align: center; }
+  .manifesto-mark {
+    font-family: var(--serif); font-size: 80px; line-height: 0.5;
+    color: var(--gold-dim); margin-bottom: 8px;
+    opacity: 0.4;
+  }
+  .manifesto-quote {
+    font-family: var(--serif); font-weight: 300; font-style: italic;
+    font-size: clamp(20px, 2.5vw, 28px);
+    line-height: 1.6; color: rgba(237,230,211,0.8);
+    margin-bottom: 32px;
+  }
+  .manifesto-quote em {
+    font-style: normal; color: var(--gold);
+  }
+  .manifesto-body {
+    font-size: 14px; line-height: 1.95;
+    color: rgba(237,230,211,0.35);
+  }
+  .manifesto-rule {
+    width: 48px; height: 0.5px; background: var(--gold-dim);
+    margin: 32px auto;
+  }
+
+  /* ── SERVICES ── */
+  .services {
+    padding: 120px 56px;
+    background: var(--bg2);
+    border-bottom: 0.5px solid var(--rule);
+  }
+  .services-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 64px;
+  }
+  .services-h2 {
+    font-family: var(--serif); font-weight: 300;
+    font-size: clamp(28px, 3vw, 40px); color: var(--cream);
+  }
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border: 0.5px solid var(--rule);
+  }
+  .service-item {
+    padding: 36px 32px;
+    border-right: 0.5px solid var(--rule);
+    border-bottom: 0.5px solid var(--rule);
+    transition: background 0.25s;
+    cursor: default;
+  }
+  .service-item:hover { background: var(--bg3); }
+  .service-item:nth-child(3n) { border-right: none; }
+  .service-item:nth-last-child(-n+3) { border-bottom: none; }
+  .service-dot {
+    width: 4px; height: 4px; background: var(--gold);
+    border-radius: 50%; margin-bottom: 20px;
+  }
+  .service-h4 {
+    font-family: var(--serif); font-weight: 400; font-size: 19px;
+    color: var(--cream); margin-bottom: 12px; line-height: 1.25;
+  }
+  .service-body {
+    font-size: 13px; line-height: 1.85;
+    color: rgba(237,230,211,0.35);
+  }
+
+  /* ── MODEL ── */
+  .model {
+    padding: 120px 56px;
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--rule);
+    display: grid; grid-template-columns: 1fr 1fr; gap: 80px;
+  }
+  .model-left {}
+  .model-h2 {
+    font-family: var(--serif); font-weight: 300;
+    font-size: clamp(28px, 3vw, 40px); color: var(--cream);
+    margin-bottom: 24px; line-height: 1.2;
+  }
+  .model-body {
+    font-size: 15px; line-height: 1.95; color: var(--cream-dim);
+    margin-bottom: 36px;
+  }
+  .model-right {
+    display: flex; flex-direction: column; gap: 1px;
+  }
+  .tier {
+    background: var(--bg3);
+    border: 0.5px solid var(--rule);
+    padding: 28px 32px;
+    position: relative; overflow: hidden;
+    transition: all 0.25s;
+  }
+  .tier:hover { background: var(--bg4); }
+  .tier-accent {
+    position: absolute; top: 0; left: 0; bottom: 0;
+    width: 2px; background: var(--rule);
+    transition: background 0.25s;
+  }
+  .tier:hover .tier-accent { background: var(--gold); }
+  .tier-name {
+    font-family: var(--sans); font-size: 10px; font-weight: 300;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: rgba(237,230,211,0.5); margin-bottom: 8px;
+  }
+  .tier-desc {
+    font-size: 13px; line-height: 1.8;
+    color: rgba(237,230,211,0.3);
+  }
+  .tier-note {
+    font-family: var(--sans); font-size: 9px; font-weight: 200;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--gold-dim); margin-top: 10px;
+  }
+
+  /* ── FORM ── */
+  .form-section {
+    padding: 120px 56px;
+    background: var(--bg2);
+    border-bottom: 0.5px solid var(--rule);
+  }
+  .form-inner {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 100px; align-items: start;
+  }
+  .form-left {}
+  .form-h2 {
+    font-family: var(--serif); font-weight: 300;
+    font-size: clamp(28px, 3vw, 40px); color: var(--cream);
+    margin-bottom: 24px; line-height: 1.25;
+  }
+  .form-body {
+    font-size: 15px; line-height: 1.95; color: var(--cream-dim);
+    margin-bottom: 36px;
+  }
+  .form-assurance {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .assurance-item {
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+  .assurance-dot {
+    width: 4px; height: 4px; background: var(--gold-dim);
+    border-radius: 50%; margin-top: 7px; flex-shrink: 0;
+  }
+  .assurance-text {
+    font-family: var(--sans); font-size: 11px; font-weight: 200;
+    letter-spacing: 0.06em; color: rgba(237,230,211,0.3);
+    line-height: 1.7;
+  }
+
+  form {
+    display: flex; flex-direction: column; gap: 20px;
+  }
+  .field { display: flex; flex-direction: column; gap: 8px; }
+  label {
+    font-family: var(--sans); font-size: 9px; font-weight: 300;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(237,230,211,0.35);
+  }
+  input[type="text"], input[type="email"], textarea, select {
+    background: var(--bg3);
+    border: 0.5px solid var(--rule2);
+    color: var(--cream);
+    font-family: var(--serif2); font-size: 14px; font-weight: 300;
+    padding: 14px 16px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+    cursor: none;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--gold-dim);
+  }
+  input::placeholder, textarea::placeholder {
+    color: rgba(237,230,211,0.18);
+  }
+  textarea { height: 110px; resize: none; }
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a7244' stroke-width='0.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 16px center;
+  }
+  select option { background: #141410; }
+
+  .form-submit {
+    background: transparent;
+    border: 0.5px solid var(--gold-dim);
+    color: var(--gold);
+    font-family: var(--sans); font-size: 10px; font-weight: 300;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    padding: 16px 32px;
+    cursor: none; align-self: flex-start;
+    transition: all 0.25s;
+  }
+  .form-submit:hover { background: var(--gold); color: var(--bg); }
+  .form-note {
+    font-family: var(--sans); font-size: 10px; font-weight: 200;
+    letter-spacing: 0.05em; color: rgba(237,230,211,0.2);
+    line-height: 1.8; max-width: 340px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--bg3);
+    border-top: 0.5px solid var(--rule);
+    padding: 48px 56px;
+  }
+  .footer-top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 48px;
+    padding-bottom: 48px;
+    border-bottom: 0.5px solid var(--rule);
+  }
+  .footer-brand {}
+  .footer-logo {
+    font-family: var(--sans); font-weight: 200;
+    font-size: 14px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(237,230,211,0.5); margin-bottom: 12px;
+  }
+  .footer-logo span { color: var(--gold-dim); }
+  .footer-tagline {
+    font-size: 12px; color: rgba(237,230,211,0.2);
+    font-family: var(--serif); font-style: italic; line-height: 1.6;
+  }
+  .footer-links {
+    display: flex; gap: 64px;
+  }
+  .footer-col {}
+  .footer-col-title {
+    font-family: var(--sans); font-size: 9px; font-weight: 300;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgba(237,230,211,0.25); margin-bottom: 20px;
+  }
+  .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+  .footer-col ul li a {
+    font-family: var(--sans); font-size: 11px; font-weight: 200;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: rgba(237,230,211,0.3); text-decoration: none;
+    transition: color 0.2s; cursor: none;
+  }
+  .footer-col ul li a:hover { color: var(--cream); }
+  .footer-bottom {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .footer-copy {
+    font-family: var(--sans); font-size: 10px; font-weight: 200;
+    letter-spacing: 0.08em; color: rgba(237,230,211,0.15);
+  }
+  .footer-india {
+    font-family: var(--sans); font-size: 9px; font-weight: 200;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(237,230,211,0.15);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .footer-india::before {
+    content: ''; width: 20px; height: 0.5px; background: rgba(237,230,211,0.15);
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes scrollAnim {
+    0%   { transform: scaleY(0); transform-origin: top; }
+    50%  { transform: scaleY(1); transform-origin: top; }
+    51%  { transform: scaleY(1); transform-origin: bottom; }
+    100% { transform: scaleY(0); transform-origin: bottom; }
+  }
+
+  .reveal {
+    opacity: 0; transform: translateY(28px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  .reveal.visible {
+    opacity: 1; transform: translateY(0);
+  }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+
+  /* ── MOBILE ── */
+  @media (max-width: 768px) {
+    nav { padding: 20px 24px; }
+    nav.scrolled { padding: 14px 24px; }
+    .nav-links { display: none; }
+    .hero { padding: 0 24px 64px; }
+    .hero-number { display: none; }
+    .hero-aside { display: none; }
+    .strip { padding: 16px 24px; gap: 24px; flex-wrap: wrap; }
+    .problem, .form-inner, .model { grid-template-columns: 1fr; gap: 48px; padding: 80px 24px; }
+    .process { padding: 80px 24px; }
+    .process-steps { grid-template-columns: 1fr; }
+    .step { border-right: none; border-bottom: 0.5px solid var(--rule); padding: 32px 0; }
+    .step:last-child { border-bottom: none; }
+    .step:not(:first-child) { padding-left: 0; }
+    .services { padding: 80px 24px; }
+    .services-grid { grid-template-columns: 1fr; }
+    .service-item { border-right: none; border-bottom: 0.5px solid var(--rule); }
+    .service-item:nth-child(3n) { border-right: none; }
+    .service-item:last-child { border-bottom: none; }
+    .manifesto { padding: 80px 24px; }
+    .form-section { padding: 80px 24px; }
+    footer { padding: 48px 24px; }
+    .footer-top { flex-direction: column; gap: 48px; }
+    .footer-links { flex-wrap: wrap; gap: 32px; }
+    .process-header { flex-direction: column; gap: 16px; align-items: flex-start; }
+    .services-header { flex-direction: column; gap: 16px; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Custom Cursor -->
+<div class="cursor" id="cursor">
+  <div class="cursor-ring" id="cursorRing"></div>
+  <div class="cursor-dot" id="cursorDot"></div>
+</div>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#" class="nav-logo">Legacy <span>Circle</span></a>
+  <ul class="nav-links">
+    <li><a href="#problem">The Gap</a></li>
+    <li><a href="#process">The Process</a></li>
+    <li><a href="#services">Services</a></li>
+    <li><a href="#model">Membership</a></li>
+    <li><a href="#begin">Begin</a></li>
+  </ul>
+  <a href="#" class="nav-portal">Members Portal</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-lines">
+    <div class="hero-line v1"></div>
+    <div class="hero-line v2"></div>
+    <div class="hero-line h1"></div>
+  </div>
+  <div class="hero-number">LC</div>
+
+  <div class="hero-content">
+    <div class="hero-tag">Social Architecture &amp; Prestige Management</div>
+    <h1 class="hero-h1">
+      For families who build<br>
+      more than <em>wealth.</em>
+    </h1>
+    <p class="hero-sub">
+      India's new affluent class has mastered capital accumulation.
+      What remains — and what most families overlook — is the deliberate
+      architecture of social standing, reputation, and legacy.
+    </p>
+    <div class="hero-actions">
+      <a href="#begin" class="btn-primary">Begin a Conversation</a>
+      <a href="#process" class="btn-ghost">How it works</a>
+    </div>
+  </div>
+
+  <div class="hero-aside">
+    <div class="hero-aside-rule"></div>
+    <p>Legacy Circle does not advertise. If you have found this page, it is because someone who knows us thought you should.</p>
+  </div>
+
+  <div class="scroll-hint">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- STRIP -->
+<div class="strip reveal">
+  <span class="strip-label">Associated with</span>
+  <div class="strip-items">
+    <span class="strip-item">Private Banking Partners</span>
+    <span class="strip-item">Art Foundations</span>
+    <span class="strip-item">Family Offices</span>
+    <span class="strip-item">Elite Law Firms</span>
+    <span class="strip-item">Cultural Institutions</span>
+    <span class="strip-item">Auction Houses</span>
+  </div>
+</div>
+
+<!-- PROBLEM -->
+<section class="problem" id="problem">
+  <div class="problem-left reveal">
+    <div class="section-label">The Gap</div>
+    <h2 class="problem-h2">The services you have do not cover the territory that matters most.</h2>
+    <div class="problem-body">
+      <p>PR firms manage crises and headlines. Wealth managers protect portfolios. Concierge services handle logistics with precision. None of them ask the harder question.</p>
+      <p>What is your family's name worth in the rooms that actually matter? And who is building that, deliberately, over the long term?</p>
+      <p>That work has no name in India yet. Legacy Circle is where it begins.</p>
+    </div>
+  </div>
+  <div class="problem-right reveal reveal-delay-2">
+    <div class="gap-card">
+      <div class="gap-card-title">Traditional PR Firms</div>
+      <div class="gap-card-body">React to crises and place media stories. Measure success in coverage volume and press mentions. The relationship ends when the news cycle moves on.</div>
+      <div class="gap-card-fail">Does not build sustained social capital</div>
+    </div>
+    <div class="gap-card">
+      <div class="gap-card-title">Luxury Concierge Services</div>
+      <div class="gap-card-body">Handle logistics, travel, and experiences with exceptional care. Task-focused by design. Not in the business of long-term reputation architecture.</div>
+      <div class="gap-card-fail">Does not position your family name</div>
+    </div>
+    <div class="gap-card">
+      <div class="gap-card-title">Wealth Managers</div>
+      <div class="gap-card-body">Protect and grow financial assets across generations. Understand portfolios, not people. Rarely operate in the social, cultural, or reputational domain.</div>
+      <div class="gap-card-fail">Does not open the right doors</div>
+    </div>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section class="process" id="process">
+  <div class="process-header reveal">
+    <div>
+      <div class="section-label">How It Works</div>
+      <h2 class="process-h2">A three-part induction,<br>not a sales process.</h2>
+    </div>
+    <p class="process-note">The work begins before you are aware of it. Our research team maps your trajectory privately before any introduction is made.</p>
+  </div>
+  <div class="process-steps">
+    <div class="step reveal reveal-delay-1">
+      <div class="step-num">01 — Research</div>
+      <h3 class="step-h3">We find you<br>before we meet you.</h3>
+      <p class="step-body">Our team maps your social and professional footprint quietly, before any conversation begins. We identify where your reputation stands, where the gaps are, and whether Legacy Circle can genuinely help.</p>
+    </div>
+    <div class="step reveal reveal-delay-2">
+      <div class="step-num">02 — Introduction</div>
+      <h3 class="step-h3">You are evaluated,<br>not pitched to.</h3>
+      <p class="step-body">The first meeting is a genuine assessment. We want to understand your family's ambitions and timeline. You will be asked questions most advisors never ask. This is intentional.</p>
+    </div>
+    <div class="step reveal reveal-delay-3">
+      <div class="step-num">03 — Induction</div>
+      <h3 class="step-h3">The work begins<br>quietly and stays that way.</h3>
+      <p class="step-body">Once accepted, a dedicated team begins work on a long-term refinement roadmap. 24/7 monitoring, encrypted communications, and engineered introductions to the right networks. All without noise.</p>
+    </div>
+  </div>
+</section>
+
+<!-- MANIFESTO -->
+<section class="manifesto">
+  <div class="manifesto-inner reveal">
+    <div class="manifesto-mark">&ldquo;</div>
+    <p class="manifesto-quote">
+      There is a kind of standing that cannot be purchased outright.
+      It can only be <em>built</em>, over time, in the right company,
+      with the right associations attached to your name.
+    </p>
+    <div class="manifesto-rule"></div>
+    <p class="manifesto-body">Legacy Circle exists for families who understand this distinction and who are willing to invest in the long game. We are not a service provider. We are a long-term partner in the architecture of reputation and legacy — the only kind that lasts beyond a single generation.</p>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="services" id="services">
+  <div class="services-header reveal">
+    <div>
+      <div class="section-label">What We Do</div>
+      <h2 class="services-h2">Six disciplines.<br>One unified mandate.</h2>
+    </div>
+  </div>
+  <div class="services-grid">
+    <div class="service-item reveal reveal-delay-1">
+      <div class="service-dot"></div>
+      <h4 class="service-h4">Reputation Architecture</h4>
+      <p class="service-body">Long-term strategy for positioning a family name or business within high-value cultural and social networks. Proactive by design, not reactive to events.</p>
+    </div>
+    <div class="service-item reveal reveal-delay-2">
+      <div class="service-dot"></div>
+      <h4 class="service-h4">Network Engineering</h4>
+      <p class="service-body">Curated introductions to board positions, cultural institutions, private clubs, and elite professional circles. Done with precision, patience, and full discretion.</p>
+    </div>
+    <div class="service-item reveal reveal-delay-3">
+      <div class="service-dot"></div>
+      <h4 class="service-h4">Digital Footprint Curation</h4>
+      <p class="service-body">Management of your family's and business's online presence across search and AI platforms. What the right people find when they look matters more than ever.</p>
+    </div>
+    <div class="service-item reveal reveal-delay-1">
+      <div class="service-dot"></div>
+      <h4 class="service-h4">Cultural Positioning</h4>
+      <p class="service-body">Art advisory, charity board placement, and cultural association that signal taste, legacy, and philanthropic intent authentically — never performatively.</p>
+    </div>
+    <div class="service-item reveal reveal-delay-2">
+      <div class="service-dot"></div>
+      <h4 class="service-h4">Legacy Transition</h4>
+      <p class="service-body">Managing the reputational dimension of generational handovers, corporate mergers, IPOs, and public milestones that demand careful, deliberate positioning.</p>
+    </div>
+    <div class="service-item reveal reveal-delay-3">
+      <div class="service-dot"></div>
+      <h4 class="service-h4">Ongoing Intelligence</h4>
+      <p class="service-body">24/7 reputation monitoring with an encrypted, zero-leak communications protocol. Your team knows the moment something requires attention.</p>
+    </div>
+  </div>
+</section>
+
+<!-- MODEL -->
+<section class="model" id="model">
+  <div class="model-left reveal">
+    <div class="section-label">Membership</div>
+    <h2 class="model-h2">A retainer model built around outcomes, not hours.</h2>
+    <p class="model-body">Legacy Circle does not bill by the hour. The work we do cannot be measured in time sheets. Instead, fees are structured around the nature and importance of the outcome — because that is the only metric that aligns our interests with yours.</p>
+    <p class="model-body" style="color: rgba(237,230,211,0.35); font-size: 14px;">Specific fee structures are discussed only with accepted members. There are no public packages.</p>
+  </div>
+  <div class="model-right reveal reveal-delay-2">
+    <div class="tier">
+      <div class="tier-accent"></div>
+      <div class="tier-name">Retainer — The Foundation</div>
+      <p class="tier-desc">A monthly or annual base engagement that keeps your team active, monitoring, and ready. Covers digital protection, reputation readiness, and ongoing advisory.</p>
+      <div class="tier-note">Predictable. Continuous. Discreet.</div>
+    </div>
+    <div class="tier">
+      <div class="tier-accent"></div>
+      <div class="tier-name">Refinement Projects — The Work</div>
+      <p class="tier-desc">Specific mandates proposed by us based on research: legacy transitions, award positioning, family brand launches, pre-merger reputation work. Priced on outcome value.</p>
+      <div class="tier-note">High-margin. High-impact. Time-bound.</div>
+    </div>
+    <div class="tier">
+      <div class="tier-accent"></div>
+      <div class="tier-name">Network Success Fee — The Premium</div>
+      <p class="tier-desc">When an engineered introduction results in a board seat, an exclusive membership, or a prestigious appointment, a success premium is charged. You pay when the outcome is real.</p>
+      <div class="tier-note">Aligned incentives. No result, no fee.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FORM -->
+<section class="form-section" id="begin">
+  <div class="form-inner">
+    <div class="form-left reveal">
+      <div class="section-label">Expression of Interest</div>
+      <h2 class="form-h2">If you are ready to begin a conversation, we are ready to listen.</h2>
+      <p class="form-body">This is not a sales form. It is the first step in a process that begins with us learning about you. We review every submission personally and respond only where we see a genuine opportunity to work together.</p>
+      <div class="form-assurance">
+        <div class="assurance-item">
+          <div class="assurance-dot"></div>
+          <span class="assurance-text">All submissions are reviewed in strict confidence</span>
+        </div>
+        <div class="assurance-item">
+          <div class="assurance-dot"></div>
+          <span class="assurance-text">We do not share or store personal data externally</span>
+        </div>
+        <div class="assurance-item">
+          <div class="assurance-dot"></div>
+          <span class="assurance-text">You will hear from us only if there is a genuine fit</span>
+        </div>
+        <div class="assurance-item">
+          <div class="assurance-dot"></div>
+          <span class="assurance-text">Response time is typically 5 to 7 working days</span>
+        </div>
+      </div>
+    </div>
+    <div class="reveal reveal-delay-2">
+      <form onsubmit="handleSubmit(event)">
+        <div class="field">
+          <label for="name">Full Name</label>
+          <input type="text" id="name" placeholder="Your name" required>
+        </div>
+        <div class="field">
+          <label for="entity">Family Office or Business</label>
+          <input type="text" id="entity" placeholder="Name of your business or family office">
+        </div>
+        <div class="field">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" placeholder="Correspondence email" required>
+        </div>
+        <div class="field">
+          <label for="city">City</label>
+          <select id="city">
+            <option value="" disabled selected>Select your city</option>
+            <option>Mumbai</option>
+            <option>Delhi</option>
+            <option>Bengaluru</option>
+            <option>Hyderabad</option>
+            <option>Chennai</option>
+            <option>Kolkata</option>
+            <option>Ahmedabad</option>
+            <option>Pune</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="refinement">What does refinement mean to you?</label>
+          <textarea id="refinement" placeholder="A few lines is sufficient. There are no wrong answers."></textarea>
+        </div>
+        <button type="submit" class="form-submit" id="submitBtn">Submit Expression of Interest</button>
+        <p class="form-note" id="formNote">Submissions are reviewed by a senior partner, not an automated system. Your time and candour are respected.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <div class="footer-logo">Legacy <span>Circle</span></div>
+      <div class="footer-tagline">Social Architecture &amp; Prestige Management<br>India. By Invitation Only.</div>
+    </div>
+    <div class="footer-links">
+      <div class="footer-col">
+        <div class="footer-col-title">Navigation</div>
+        <ul>
+          <li><a href="#problem">The Gap</a></li>
+          <li><a href="#process">The Process</a></li>
+          <li><a href="#services">Services</a></li>
+          <li><a href="#model">Membership</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Legal</div>
+        <ul>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Discretion Policy</a></li>
+          <li><a href="#">Terms of Engagement</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Access</div>
+        <ul>
+          <li><a href="#">Members Portal</a></li>
+          <li><a href="#begin">Begin a Conversation</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="footer-copy">&copy; 2025 Legacy Circle. All rights reserved.</div>
+    <div class="footer-india">India</div>
+  </div>
+</footer>
+
+<script>
+  // Cursor
+  const cursor = document.getElementById('cursor');
+  const dot = document.getElementById('cursorDot');
+  const ring = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  function animCursor() {
+    dot.style.left = mx + 'px'; dot.style.top = my + 'px';
+    rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
+    ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+    requestAnimationFrame(animCursor);
+  }
+  animCursor();
+
+  // Nav scroll
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 60);
+  });
+
+  // Reveal on scroll
+  const reveals = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  reveals.forEach(el => io.observe(el));
+
+  // Form
+  function handleSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    const note = document.getElementById('formNote');
+    btn.textContent = 'Received';
+    btn.style.background = 'rgba(184,154,92,0.15)';
+    btn.style.borderColor = 'var(--gold)';
+    btn.style.color = 'var(--gold)';
+    btn.disabled = true;
+    note.textContent = 'Your submission has been received. A senior partner will review it personally and be in touch if there is a genuine fit.';
+    note.style.color = 'rgba(184,154,92,0.5)';
+  }
+</script>
+</body>
+</html>
